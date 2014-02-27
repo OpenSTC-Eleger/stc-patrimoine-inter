@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+	<data>
+	    
+	    <record id="openstc_patrimoine_contract_form" model="ir.ui.view">
+	        <field name="name">openstc.patrimoine.contract.form.inherit</field>
+            <field name="model">openstc.patrimoine.contract</field>
+            <field name="inherit_id" ref="openstc_patrimoine.openstc_patrimoine_contract_form"/>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+				<button name="confirm" position="before">
+					<button name="get_all_recurrences" icon="gtk-execute" type="object" string="Compute recurrence"/>   
+				</button>
+				<group string="Intervenant" position="after">
+					<newline/>
+					<field name="contract_line" nolabel="1" colspan="4" context="{'default_date_start':date_start_order,'default_date_end':date_end_order}">
+						<tree string="Intervention(s) Contracted">
+						    <field name="name"/>
+ 						    <!-- <field name="tags_names" string="Tags"/> -->
+ 						    <field name="type_inter"/>
+						    <field name="next_inter"/>
+						    <field name="recur_type"/>
+						</tree>
+					</field>
+				</group>
+			</field>
+		</record>
+	    
+		<record id="openstc_patrimoine_contract_line_form" model="ir.ui.view">
+	        <field name="name">openstc.patrimoine.contract.line.form</field>
+            <field name="model">openstc.patrimoine.contract.line</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form string="Action(s) Contracted">
+                    <group colspan="2" col="2">
+                        <field name="name"/>
+                        <!-- <field name="tags"/>-->
+                        <field name="type_inter"/>
+                    	<field name="recur_type" required="1"/>
+                        <field name="date_start" required="1"/>
+	                    <field name="date_end" required="1"/>
+	                    <group colspan="2" col="3">
+	                        <field name="recur_periodicity"/>
+	                        <field name="recur_month_relative_day"/>
+	           	        </group>
+	                    <group colspan="2" col="4">
+	                    	<field name="next_inter"/>
+	                   		<field name="last_inter" readonly="1"/>
+	                    </group>
+	                    <newline/>
+                    </group>
+                    <group colspan="2"/>
+                    <newline/>
+                    <field name="occurrence_ids" nolabel="1">
+                        <tree string="Task(s)">
+                            <field name="date_deadline"/>
+                            <field name="description"/>
+                            <field name="state"/>
+                        </tree>
+                        <form string="Tasks">
+                            <field name="date_deadline"/>
+                            <field name="description"/>
+                            <field name="state"/>
+                        </form>
+                    </field>
+                </form>
+            </field>
+        </record>
+	    
+	     <record id="openstc_patrimoine_users_form_inherit" model="ir.ui.view">
+	        <field name="name">openstc.patrimoine.users.form.inherit</field>
+            <field name="model">res.users</field>
+            <field name="type">form</field>
+            <field name="priority">19</field>
+            <field name="inherit_id" ref="base.view_users_form"/>
+            <field name="arch" type="xml">
+        		<page string="Access Rights" position="after">
+        		    <page string="Accreditation(s) and License(s)">
+	        		    <field name="openstc_accreditation_ids" nolabel="1">
+	        		        <tree editable="top" string="Accreditation(s)">
+	        		            <field name="accreditation_id"/>
+	        		            <field name="date_validity"/>
+	        		        </tree>
+	        		    </field>
+	        		    <field name="openstc_license_ids" nolabel="1">
+	        		        <tree editable="top" string="License(s)">
+	        		            <field name="license_id"/>
+	        		            <field name="date_validity"/>
+	        		        </tree>
+	        		    </field>
+        			</page>
+        		</page>
+	    	</field>
+	    </record>
+	</data>
+</openerp>
