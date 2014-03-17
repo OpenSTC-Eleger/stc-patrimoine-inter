@@ -23,6 +23,10 @@ from osv import fields, osv
 class openstc_patrimoine_contract(OpenbaseCore):
     _inherit = 'openstc.patrimoine.contract'
     
+    _fields_names = {
+        'contract_line_names': 'contract_line'
+        } 
+    
     _columns = {
         'intervention_id':fields.many2one('project.project'),
         'contract_line':fields.one2many('openstc.patrimoine.contract.line', 'contract_id', 'Intervention Lines'),
@@ -98,11 +102,14 @@ class openstc_patrimoine_contrat_line(OpenbaseCore):
         return ret
     
     _columns = {
-        'name':fields.char('Name',size=128),
+        'name':fields.char('Name',size=128, required=True),
         'contract_id':fields.many2one('openstc.patrimoine.contract', 'Contract linked'),
+        'is_team':fields.boolean('Is Team Work'),
         'agent_id':fields.many2one('res.users', 'Agent'),
         'team_id':fields.many2one('openstc.team', 'Team'),
         'task_categ_id':fields.many2one('openstc.task.category', 'Task category'),
+        'planned_hours':fields.float('Planned hours'),
+        'supplier_cost':fields.float('Supplier Cost'),
         
         'last_inter':fields.function(_get_next_inter, multi='recur', method=True, type='date',string='Date last intervention', help="Planned date of the next intervention, you can change it as you want.",
                                      store={'openstc.patrimoine.contract.occurrence':(_get_line_from_occur, ['date_order','state'], 10),
@@ -111,12 +118,11 @@ class openstc_patrimoine_contrat_line(OpenbaseCore):
                                      store={'openstc.patrimoine.contract.occurrence':(_get_line_from_occur, ['date_order','state'], 10),
                                             'openstc.patrimoine.contract.line':(lambda self,cr,uid,ids,ctx={}:ids,['occurence_line'],11)}),
         
-        'date_start':fields.related('contract_id', 'date_start_order', type="datetime", required=True, string="Date start", store=store_related),
-        'date_end':fields.related('contract_id', 'date_end_order', type="datetime", required=True, string="Date end", store=store_related),
+        'date_start':fields.related('contract_id', 'date_start_order', type="datetime", required=False, string="Date start", store=store_related),
+        'date_end':fields.related('contract_id', 'date_end_order', type="datetime", required=False, string="Date end", store=store_related),
         'internal_inter':fields.related('contract_id','internal_inter',type='boolean', string='Internal Intervention', store=store_related),
         'technical_service_id':fields.related('contract_id','technical_service_id',type='many2one',relation='openstc.service', string='Internal Service', store=store_related),
-        'type_inter':fields.many2one('openstc.patrimoine.contract.intervention.type','Intervention Type'),
-
+        
         'equipment_id':fields.related('contract_id','equipment_id',type='many2one',relation='openstc.equipment',string="equipment", store=store_related),
         'site_id':fields.related('contract_id','site_id',type='many2one',relation='openstc.site',string="Site", store=store_related),
         'patrimoine_is_equipment':fields.related('contract_id','patrimoine_is_equipment',type='boolean',string='Is Equipment',store=store_related),
@@ -128,6 +134,7 @@ class openstc_patrimoine_contrat_line(OpenbaseCore):
     _defaults = {
         'recur_length_type':'until',
         'recur_month_type':'monthday',
+        'is_team': lambda *a: False
         }
     
     _order = "next_inter,technical_service_id"

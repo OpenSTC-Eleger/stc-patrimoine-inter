@@ -17,7 +17,6 @@
 						<tree string="Intervention(s) Contracted">
 						    <field name="name"/>
  						    <!-- <field name="tags_names" string="Tags"/> -->
- 						    <field name="type_inter"/>
 						    <field name="next_inter"/>
 						    <field name="recur_type"/>
 						</tree>
@@ -35,7 +34,6 @@
                     <group colspan="2" col="2">
                         <field name="name"/>
                         <!-- <field name="tags"/>-->
-                        <field name="type_inter"/>
                     	<field name="recur_type" required="1"/>
                         <field name="date_start" required="1"/>
 	                    <field name="date_end" required="1"/>
