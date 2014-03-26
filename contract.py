@@ -27,44 +27,61 @@ class openstc_patrimoine_contract(OpenbaseCore):
         'contract_line_names': 'contract_line'
         } 
     
+    _actions = {
+        'create_inter':lambda self,cr,uid,record,groups_code: record.state in ('draft',),
+        }
+    
     _columns = {
         'intervention_id':fields.many2one('project.project'),
-        'contract_line':fields.one2many('openstc.patrimoine.contract.line', 'contract_id', 'Intervention Lines'),
+        'contract_line':fields.one2many('openstc.task.recurrence', 'contract_id', 'Intervention Lines'),
         }
     
     def get_all_recurrences(self, cr, uid, ids, context=None):
-        line_obj = self.pool.get("openstc.patrimoine.contract.line")
+        line_obj = self.pool.get("openstc.task.recurrence")
         for contract in self.browse(cr, uid, ids, context=context):
-            line_ids = [line.id for line in contract.contract_line]
+            line_ids = [line.id for line in contract.contract_line if line.recurrence]
             line_obj.generate_dates(cr, uid, line_ids, context=context)
         return True
     
-        #Override to push contract dates modifications to recur date of each lines contract  
-    def write(self, cr, uid, ids, vals, context=None):
-        if 'date_start_order' in vals or 'date_end_order' in vals:
-            for contract in self.browse(cr, uid, ids, context=context):
-                values = []
-                action = {}
-                if 'date_start_order' in vals:
-                    action.update({'start_recur':vals['date_start_order']})
-                if 'date_end_order' in vals:
-                    action.update({'end_recur':vals['date_end_order']})
-                values.extend([(1,line.id,action) for line in contract.contract_line])
-                if 'contract_line' in vals:
-                    vals['contract_line'].extend(values)
-                else:
-                    vals['contract_line'] = values
-                super(openstc_patrimoine_contract, self).write(cr, uid, [contract.id], vals, context=None)
-        else:
-            super(openstc_patrimoine_contract, self).write(cr, uid, ids, vals, context=None)
+    """ @note: Override of Wkf method, generate tasks according to recurrence setting"""
+    def wkf_wait(self, cr, uid, ids, context=None):
+        self.write(cr, uid, ids, {'state':'wait'},context=context)
+        self.get_all_recurrences(cr, uid, ids, context=context)
         return True
     
+    """ @return: dict containing values used to create intervention"""
+    def prepare_intervention(self, cr, uid, contract ,context=None):
+        ret = {'name':contract.name,
+               'description':contract.description,
+               'service_id':contract.technical_service_id.id if contract.internal_inter and contract.technical_service_id else False,
+               'has_equipment':contract.patrimoine_is_equipment,
+               'equipment_id':contract.equipment_id.id if contract.patrimoine_is_equipment and contract.equipment_id else False,
+               'site1':contract.site_id.id if not contract.patrimoine_is_equipment and contract.site_id else False,
+               'date_deadline':contract.date_end_order,
+               'recurrence_ids':[(4,line.id) for line in contract.contract_line]
+               }
+        return ret
+    
+    """ @note: Generate intervention and link it with recurrent tasks"""
+    def generate_intervention(self, cr, uid, ids, context=None):
+        for contract in self.browse(cr, uid, ids, context=context):
+            vals = self.prepare_intervention(cr, uid, contract, context=context)
+            ret = self.pool.get('project.project').create(cr, uid, vals, context=context)
+            contract.write({'intervention_id':ret})
+        return True
+    
+    """ @note: Override of Wkf method, generate intervention and update state"""
+    def wkf_confirm(self, cr, uid, ids, context=None):
+        super(openstc_patrimoine_contract, self).wkf_confirm(cr, uid, ids, context=context)
+        self.generate_intervention(cr, uid, ids, context=context)
+        return True
+        
 openstc_patrimoine_contract()
 
 
 class openstc_patrimoine_contrat_line(OpenbaseCore):
     _inherit = 'openbase.recurrence'
-    _name = 'openstc.patrimoine.contract.line'
+    _name = 'openstc.task.recurrence'
     
      
     def _get_line_from_occur(self, cr, uid, ids, context=None):
@@ -82,7 +99,7 @@ class openstc_patrimoine_contrat_line(OpenbaseCore):
         return ret
     
     store_related = {'openstc.patrimoine.contract':[_get_line_from_contracts,['equipment_id','site_id','patrimoine_is_equipment'],10],
-                    'openstc.patrimoine.contract.line':[lambda self,cr,uid,ids,ctx={}:ids,['contract_id'],9]}
+                    'openstc.task.recurrence':[lambda self,cr,uid,ids,ctx={}:ids,['contract_id'],9]}
 
     
     #get first occurrence in draft state as next_inter, and last occurrence in done state as last_inter
@@ -113,10 +130,10 @@ class openstc_patrimoine_contrat_line(OpenbaseCore):
         
         'last_inter':fields.function(_get_next_inter, multi='recur', method=True, type='date',string='Date last intervention', help="Planned date of the next intervention, you can change it as you want.",
                                      store={'openstc.patrimoine.contract.occurrence':(_get_line_from_occur, ['date_order','state'], 10),
-                                            'openstc.patrimoine.contract.line':(lambda self,cr,uid,ids,ctx={}:ids,['occurence_line'],11)}),
+                                            'openstc.task.recurrence':(lambda self,cr,uid,ids,ctx={}:ids,['occurence_line'],11)}),
         'next_inter':fields.function(_get_next_inter, multi='recur', method=True, type='date', string='Date next intervention', help="Date of the last intervention executed in this contract",
                                      store={'openstc.patrimoine.contract.occurrence':(_get_line_from_occur, ['date_order','state'], 10),
-                                            'openstc.patrimoine.contract.line':(lambda self,cr,uid,ids,ctx={}:ids,['occurence_line'],11)}),
+                                            'openstc.task.recurrence':(lambda self,cr,uid,ids,ctx={}:ids,['occurence_line'],11)}),
         
         'date_start':fields.related('contract_id', 'date_start_order', type="datetime", required=False, string="Date start", store=store_related),
         'date_end':fields.related('contract_id', 'date_end_order', type="datetime", required=False, string="Date end", store=store_related),
@@ -129,10 +146,13 @@ class openstc_patrimoine_contrat_line(OpenbaseCore):
         
         'patrimoine_name':fields.related('contract_id','patrimoine_name',type='char', string="patrimony", store=store_related),
         
-        'occurrence_ids':fields.one2many('project.task','contract_line_id', 'Tasks'),
+        'recurrence':fields.boolean('has recurrence'),
+        'occurrence_ids':fields.one2many('project.task','recurrence_id', 'Tasks'),
+        'intervention_id':fields.many2one('project.project', 'Intervention'),
         }
     _defaults = {
-        'recur_length_type':'until',
+        'recur_length_type':lambda *a:'until',
+        'recurrence': lambda *a: False,
         'recur_month_type':'monthday',
         'is_team': lambda *a: False
         }
@@ -145,13 +165,18 @@ class openstc_patrimoine_contrat_line(OpenbaseCore):
     @return: data used to create tasks
     @note: this method override the one created in openbase.recurrence to customize behavior"""
     def prepare_occurrences(self, cr, uid, record, date, context=None):
-        #@todo: complete this method to fill user_id / team_id, and other required data
+        
         val = super(openstc_patrimoine_contrat_line, self).prepare_occurrences(cr, uid, record, date, context=context)
-        assert record.contract_id.intervention_id, 'Error: intervention_id (project.project) is not present on contract %s :%s' % (str(record.contract_id.id),record.contract_id.name)
+        #assert record.contract_id.intervention_id, 'Error: intervention_id (project.project) is not present on contract %s :%s' % (str(record.contract_id.id),record.contract_id.name)
         return {
-            'contract_line_id':val.get('recurrence_id'),
+            'name':record.name,
+            'recurrence_id':val.get('recurrence_id'),
             'date_deadline':val.get('date_start'),
-            'project_id':record.contract_id.intervention_id.id,  
+            #'project_id':record.contract_id.intervention_id.id,
+            'user_id':record.agent_id.id if not record.is_team else False,
+            'team_id':record.team_id.id if record.is_team else False,
+            'planned_hours': record.planned_hours
+            
             }
     
 openstc_patrimoine_contrat_line()

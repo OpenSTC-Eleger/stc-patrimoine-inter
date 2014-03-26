@@ -3,8 +3,8 @@
 	<data>
 		
 		<record id="openstc_patrimoine_contract_line_view_search" model="ir.ui.view">
-   	        <field name="name">openstc.patrimoine.contract.line.search</field>
-            <field name="model">openstc.patrimoine.contract.line</field>
+   	        <field name="name">openstc.task.recurrence.search</field>
+            <field name="model">openstc.task.recurrence</field>
             <field name="type">search</field>
             <field name="arch" type="xml">
 				<search>
@@ -16,7 +16,7 @@
 		<record id="action_openstc_patrimoine_contract_line_view_all" model="ir.actions.act_window">
             <field name="name">Incoming interventions</field>
             <field name="type">ir.actions.act_window</field>
-            <field name="res_model">openstc.patrimoine.contract.line</field>
+            <field name="res_model">openstc.task.recurrence</field>
             <field name="view_type">form</field>
             <field name="view_mode">tree,form</field>
             <field name="view_id" ref="openstc_patrimoine_contract_line_view_search"/>

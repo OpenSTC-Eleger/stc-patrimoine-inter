@@ -26,8 +26,8 @@
 		</record>
 	    
 		<record id="openstc_patrimoine_contract_line_form" model="ir.ui.view">
-	        <field name="name">openstc.patrimoine.contract.line.form</field>
-            <field name="model">openstc.patrimoine.contract.line</field>
+	        <field name="name">openstc.task.recurrence.form</field>
+            <field name="model">openstc.task.recurrence</field>
             <field name="type">form</field>
             <field name="arch" type="xml">
                 <form string="Action(s) Contracted">

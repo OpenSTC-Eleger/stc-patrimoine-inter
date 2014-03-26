@@ -1,0 +1,101 @@
+# Translation of OpenERP Server.
+# This file contains the translation of the following modules:
+#	* openstc_patrimoine_inter
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenERP Server 6.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2013-06-05 07:55+0000\n"
+"PO-Revision-Date: 2013-06-05 07:55+0000\n"
+"Last-Translator: <>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: openstc_patrimoine_inter
+#: selection:openstc.task.recurrence,recur_month_relative_day:0
+msgid "Monday"
+msgstr "Lundi"
+
+#. module: openstc_patrimoine_inter
+#: selection:openstc.task.recurrence,recur_month_relative_day:0
+msgid "Tuesday"
+msgstr "Mardi"
+
+#. module: openstc_patrimoine_inter
+#: selection:openstc.task.recurrence,recur_month_relative_day:0
+msgid "Wednesday"
+msgstr "Mercredi"
+
+#. module: openstc_patrimoine_inter
+#: selection:openstc.task.recurrence,recur_month_relative_day:0
+msgid "Thursday"
+msgstr "Jeudi"
+
+#. module: openstc_patrimoine_inter
+#: selection:openstc.task.recurrence,recur_month_relative_day:0
+msgid "Friday"
+msgstr "Vendredi"
+
+#. module: openstc_patrimoine_inter
+#: selection:openstc.task.recurrence,recur_month_relative_day:0
+msgid "Saturday"
+msgstr "Samedi"
+
+#. module: openstc_patrimoine_inter
+#: selection:openstc.task.recurrence,recur_month_relative_day:0
+msgid "Sunday"
+msgstr "Dimanche"
+
+#. module: openstc_patrimoine_inter
+#: selection:openstc.task.recurrence,recur_type:0
+msgid "Daily"
+msgstr "Quotidienne"
+
+#. module: openstc_patrimoine_inter
+#: selection:openstc.task.recurrence,recur_type:0
+msgid "Weekly"
+msgstr "Hebdomadaire"
+
+#. module: openstc_patrimoine_inter
+#: selection:openstc.task.recurrence,recur_type:0
+msgid "Monthly"
+msgstr "Mensuelle"
+
+#. module: openstc_patrimoine_inter
+#: selection:openstc.task.recurrence,recur_month_type:0
+msgid "Month Day"
+msgstr "Jour du mois"
+
+#. module: openstc_patrimoine_inter
+#: selection:openstc.task.recurrence,recur_month_type:0
+msgid "Month Relative Weekday"
+msgstr "Jour d'une semaine"
+
+#. module: openstc_patrimoine_inter
+#: selection:openstc.task.recurrence,recur_month_relative_weight:0
+msgid "First"
+msgstr "Premier"
+
+#. module: openstc_patrimoine_inter
+#: selection:openstc.task.recurrence,recur_month_relative_weight:0
+msgid "Second"
+msgstr "Deuxième"
+
+#. module: openstc_patrimoine_inter
+#: selection:openstc.task.recurrence,recur_month_relative_weight:0
+msgid "Third"
+msgstr "Troisième"
+
+#. module: openstc_patrimoine_inter
+#: selection:openstc.task.recurrence,recur_month_relative_weight:0
+msgid "Fourth"
+msgstr "Quatrième"
+
+#. module: openstc_patrimoine_inter
+#: selection:openstc.task.recurrence,recur_month_relative_weight:0
+msgid "Last"
+msgstr "Dernier"
