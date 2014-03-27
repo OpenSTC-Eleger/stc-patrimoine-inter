@@ -75,6 +75,19 @@ class openstc_patrimoine_contract(OpenbaseCore):
         super(openstc_patrimoine_contract, self).wkf_confirm(cr, uid, ids, context=context)
         self.generate_intervention(cr, uid, ids, context=context)
         return True
+    
+    """ @return: dict with updated values from the parent method, remove all occurrences for the new contract, keep only recurrences setting"""
+    def prepare_default_values_renewed_contract(self, cr, uid, contract, context=None):
+        ret = super(openstc_patrimoine_contract, self).prepare_default_values_renewed_contract(cr, uid, contract, context=context)
+        recurrence_obj = self.pool.get('openstc.task.recurrence')
+        recurrence_values = []
+        for recurrence in contract.contract_line:
+            recurrence_values.append((4,recurrence_obj.copy(cr, uid, recurrence.id, {'occurrence_ids':[(5,)]}, context=context)))
+        ret.update({
+            'intervention_id':False,
+            'contract_line':recurrence_values
+            })
+        return ret
         
 openstc_patrimoine_contract()
 
