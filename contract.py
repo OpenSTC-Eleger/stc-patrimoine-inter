@@ -65,10 +65,17 @@ class openstc_patrimoine_contract(OpenbaseCore):
     
     """ @note: Generate intervention and link it with recurrent tasks"""
     def generate_intervention(self, cr, uid, ids, context=None):
+        inter_obj = self.pool.get('project.project')
+        task_obj = self.pool.get('project.task')
         for contract in self.browse(cr, uid, ids, context=context):
+            #create and link intervention according to the contract data
             vals = self.prepare_intervention(cr, uid, contract, context=context)
             ret = self.pool.get('project.project').create(cr, uid, vals, context=context)
             contract.write({'intervention_id':ret})
+            #retrieve all tasks of the contract and link them with the newly created intervention
+            task_ids = task_obj.search(cr, uid, [('recurrence_id.contract_id.id','=',contract.id)], context=context)
+            if task_ids:
+                inter_obj.write(cr, uid, [ret], {'tasks':[(4,task_id) for task_id in task_ids]})
         return True
     
     """ @note: Override of Wkf method, generate intervention and update state"""
@@ -115,11 +122,7 @@ class openstc_task_recurrence(OpenbaseCore):
                     'openstc.task.recurrence':[lambda self,cr,uid,ids,ctx={}:ids,['contract_id'],9]}
 
     
-    #get first occurrence in draft state as next_inter, and last occurrence in done state as last_inter
-    def _get_next_inter(self, cr, uid, ids, name, args, context=None):
-        ret = {}.fromkeys(ids, False)
-        #@TODO
-        return ret
+
     
     """ Instead of using related field, i use functionnal field (because patrimoine module will need this behavior too
     @return: values of 'related' values of fields defined in 'name' params"""
@@ -144,20 +147,13 @@ class openstc_task_recurrence(OpenbaseCore):
     _columns = {
         
         'contract_id':fields.many2one('openstc.patrimoine.contract', 'Contract linked'),
-        
-        'last_inter':fields.function(_get_next_inter, multi='recur', method=True, type='date',string='Date last intervention', help="Planned date of the next intervention, you can change it as you want.",
-                                     store={'openstc.patrimoine.contract.occurrence':(_get_line_from_occur, ['date_order','state'], 10),
-                                            'openstc.task.recurrence':(lambda self,cr,uid,ids,ctx={}:ids,['occurence_line'],11)}),
-        'next_inter':fields.function(_get_next_inter, multi='recur', method=True, type='date', string='Date next intervention', help="Date of the last intervention executed in this contract",
-                                     store={'openstc.patrimoine.contract.occurrence':(_get_line_from_occur, ['date_order','state'], 10),
-                                            'openstc.task.recurrence':(lambda self,cr,uid,ids,ctx={}:ids,['occurence_line'],11)}),
         }
     
     def create(self, cr, uid, vals, context=None):
         #retrieve value of 'from_inter' according to 'contract_id' value
         if vals.get('contract_id',False):
             vals.update({'from_inter':False})
-        ret = super(openstc_patrimoine_contract, self).create(cr, uid, vals, context=context)
+        ret = super(openstc_task_recurrence, self).create(cr, uid, vals, context=context)
         return ret
     
 openstc_task_recurrence()
