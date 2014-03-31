@@ -58,7 +58,8 @@ class openstc_patrimoine_contract(OpenbaseCore):
                'equipment_id':contract.equipment_id.id if contract.patrimoine_is_equipment and contract.equipment_id else False,
                'site1':contract.site_id.id if not contract.patrimoine_is_equipment and contract.site_id else False,
                'date_deadline':contract.date_end_order,
-               'recurrence_ids':[(4,line.id) for line in contract.contract_line]
+               'recurrence_ids':[(4,line.id) for line in contract.contract_line],
+               'contract_id':contract.id,
                }
         return ret
     
@@ -92,9 +93,8 @@ class openstc_patrimoine_contract(OpenbaseCore):
 openstc_patrimoine_contract()
 
 
-class openstc_patrimoine_contrat_line(OpenbaseCore):
-    _inherit = 'openbase.recurrence'
-    _name = 'openstc.task.recurrence'
+class openstc_task_recurrence(OpenbaseCore):
+    _inherit = 'openstc.task.recurrence'
     
      
     def _get_line_from_occur(self, cr, uid, ids, context=None):
@@ -117,29 +117,33 @@ class openstc_patrimoine_contrat_line(OpenbaseCore):
     
     #get first occurrence in draft state as next_inter, and last occurrence in done state as last_inter
     def _get_next_inter(self, cr, uid, ids, name, args, context=None):
-        ret = {}
-        for line in self.browse(cr, uid, ids, context=context):
-            next_inter = False
-            last_inter = False
-            ret[line.id] = {}
-            #get occurrences list, ordered by date_order (according to _order attribute of object)
-            for occurrence in line.occurrence_line:
-                if occurrence.is_active() and not next_inter:
-                    next_inter = occurrence.date_order
-                elif not occurrence.is_active() and not last_inter:
-                    last_inter = occurrence.date_order
-            ret[line.id] = {'next_inter':next_inter, 'last_inter':last_inter}
+        ret = {}.fromkeys(ids, False)
+        #@TODO
+        return ret
+    
+    """ Instead of using related field, i use functionnal field (because patrimoine module will need this behavior too
+    @return: values of 'related' values of fields defined in 'name' params"""
+    def related_fields_function(self, cr, uid, ids, name, args, context=None):
+        ret = super(openstc_task_recurrence, self).related_fields_function(cr, uid, ids, name, args, context=None)
+        for recurrence in self.browse(cr, uid, ids, context=context):
+            contract = recurrence.contract_id 
+            if not recurrence.from_inter and contract:
+                val = {
+                    'internal_inter':contract.internal_inter,
+                    'technical_service_id':contract.technical_service_id.id if contract.technical_service_id else False,
+                    'patrimoine_is_equipment':contract.patrimoine_is_equipment,
+                    'site_id':contract.site_id.id if contract.site_id else False,
+                    'equipment_id':contract.equipment_id.id if contract.equipment_id else False,
+                    'patrimoine_name':contract.patrimoine_name,
+                    'date_start':contract.date_start_order,
+                    'date_end':contract.date_end_order
+                    }
+                ret[recurrence.id].update(val)
         return ret
     
     _columns = {
-        'name':fields.char('Name',size=128, required=True),
+        
         'contract_id':fields.many2one('openstc.patrimoine.contract', 'Contract linked'),
-        'is_team':fields.boolean('Is Team Work'),
-        'agent_id':fields.many2one('res.users', 'Agent'),
-        'team_id':fields.many2one('openstc.team', 'Team'),
-        'task_categ_id':fields.many2one('openstc.task.category', 'Task category'),
-        'planned_hours':fields.float('Planned hours'),
-        'supplier_cost':fields.float('Supplier Cost'),
         
         'last_inter':fields.function(_get_next_inter, multi='recur', method=True, type='date',string='Date last intervention', help="Planned date of the next intervention, you can change it as you want.",
                                      store={'openstc.patrimoine.contract.occurrence':(_get_line_from_occur, ['date_order','state'], 10),
@@ -147,52 +151,16 @@ class openstc_patrimoine_contrat_line(OpenbaseCore):
         'next_inter':fields.function(_get_next_inter, multi='recur', method=True, type='date', string='Date next intervention', help="Date of the last intervention executed in this contract",
                                      store={'openstc.patrimoine.contract.occurrence':(_get_line_from_occur, ['date_order','state'], 10),
                                             'openstc.task.recurrence':(lambda self,cr,uid,ids,ctx={}:ids,['occurence_line'],11)}),
-        
-        'date_start':fields.related('contract_id', 'date_start_order', type="datetime", required=False, string="Date start", store=store_related),
-        'date_end':fields.related('contract_id', 'date_end_order', type="datetime", required=False, string="Date end", store=store_related),
-        'internal_inter':fields.related('contract_id','internal_inter',type='boolean', string='Internal Intervention', store=store_related),
-        'technical_service_id':fields.related('contract_id','technical_service_id',type='many2one',relation='openstc.service', string='Internal Service', store=store_related),
-        
-        'equipment_id':fields.related('contract_id','equipment_id',type='many2one',relation='openstc.equipment',string="equipment", store=store_related),
-        'site_id':fields.related('contract_id','site_id',type='many2one',relation='openstc.site',string="Site", store=store_related),
-        'patrimoine_is_equipment':fields.related('contract_id','patrimoine_is_equipment',type='boolean',string='Is Equipment',store=store_related),
-        
-        'patrimoine_name':fields.related('contract_id','patrimoine_name',type='char', string="patrimony", store=store_related),
-        
-        'recurrence':fields.boolean('has recurrence'),
-        'occurrence_ids':fields.one2many('project.task','recurrence_id', 'Tasks'),
-        'intervention_id':fields.many2one('project.project', 'Intervention'),
-        }
-    _defaults = {
-        'recur_length_type':lambda *a:'until',
-        'recurrence': lambda *a: False,
-        'recur_month_type':'monthday',
-        'is_team': lambda *a: False
         }
     
-    _order = "next_inter,technical_service_id"
+    def create(self, cr, uid, vals, context=None):
+        #retrieve value of 'from_inter' according to 'contract_id' value
+        if vals.get('contract_id',False):
+            vals.update({'from_inter':False})
+        ret = super(openstc_patrimoine_contract, self).create(cr, uid, vals, context=context)
+        return ret
     
-    """
-    @param record: browse_record object of contract.line to generate tasks
-    @param date: datetime object representing date_start of the task to be created after this method
-    @return: data used to create tasks
-    @note: this method override the one created in openbase.recurrence to customize behavior"""
-    def prepare_occurrences(self, cr, uid, record, date, context=None):
-        
-        val = super(openstc_patrimoine_contrat_line, self).prepare_occurrences(cr, uid, record, date, context=context)
-        #assert record.contract_id.intervention_id, 'Error: intervention_id (project.project) is not present on contract %s :%s' % (str(record.contract_id.id),record.contract_id.name)
-        return {
-            'name':record.name,
-            'recurrence_id':val.get('recurrence_id'),
-            'date_deadline':val.get('date_start'),
-            #'project_id':record.contract_id.intervention_id.id,
-            'user_id':record.agent_id.id if not record.is_team else False,
-            'team_id':record.team_id.id if record.is_team else False,
-            'planned_hours': record.planned_hours
-            
-            }
-    
-openstc_patrimoine_contrat_line()
+openstc_task_recurrence()
 
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

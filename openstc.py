@@ -20,20 +20,11 @@
 from openbase.openbase_core import OpenbaseCore
 from osv import fields, osv
 
-class task(OpenbaseCore):
-    _inherit = 'project.task'
-    
-    _columns = {
-        'recurrence_id':fields.many2one('openstc.task.recurrence', 'Contract Line', ondelete="cascade"),
-        }
-    
-task()
-
 class intervention(OpenbaseCore):
     _inherit = 'project.project'
     
     _columns = {
-        'recurrence_ids':fields.one2many('openstc.task.recurrence', 'intervention_id', 'Recurrence(s)'),
+        'contract_id': fields.many2one('openstc.patrimoine.contract', 'Contract'),
         }
 intervention()
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
