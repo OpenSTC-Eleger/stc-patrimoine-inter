@@ -90,7 +90,7 @@ class openstc_patrimoine_contract(OpenbaseCore):
         recurrence_obj = self.pool.get('openstc.task.recurrence')
         recurrence_values = []
         for recurrence in contract.contract_line:
-            recurrence_values.append((4,recurrence_obj.copy(cr, uid, recurrence.id, {'occurrence_ids':[(5,)]}, context=context)))
+            recurrence_values.append((4,recurrence_obj.copy(cr, uid, recurrence.id, {'occurrence_ids':[(5,)], 'intervention_id':False}, context=context)))
         ret.update({
             'intervention_id':False,
             'contract_line':recurrence_values
