@@ -32,7 +32,7 @@ class openstc_patrimoine_contract(OpenbaseCore):
         }
     
     _columns = {
-        'intervention_id':fields.many2one('project.project'),
+        'intervention_id':fields.many2one('project.project', ondelete="cascade"),
         'contract_line':fields.one2many('openstc.task.recurrence', 'contract_id', 'Intervention Lines'),
         }
     
@@ -96,6 +96,14 @@ class openstc_patrimoine_contract(OpenbaseCore):
             'contract_line':recurrence_values
             })
         return ret
+        
+    def wkf_cancel(self, cr, uid, ids, context=None):
+        super(openstc_patrimoine_contract, self).wkf_cancel(cr, uid, ids, context=None)
+        inter_obj = self.pool.get('project.project')
+        for contract in self.browse(cr, uid, ids, context=context):
+            if contract.intervention_id:
+                inter_obj.write(cr, uid, [contract.intervention_id.id], {'state':'cancelled', 'cancel_reason':contract.cancel_reason},context=context)
+        return True
         
 openstc_patrimoine_contract()
 

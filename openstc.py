@@ -19,12 +19,22 @@
 #############################################################################
 from openbase.openbase_core import OpenbaseCore
 from osv import fields, osv
+import netsvc
 
 class intervention(OpenbaseCore):
     _inherit = 'project.project'
     
+    """ Before cancelling interventions, cancel their linked contracts"""
+    def action_cancelled(self, cr, uid, ids):
+        wkf_service = netsvc.LocalService('workflow')
+        for inter in self.browse(cr, uid, ids):
+            if inter.contract_id.state != 'cancel':
+                inter.contract_id.write({'cancel_reason':inter.cancel_reason})
+                wkf_service.trg_validate(uid, 'openstc.patrimoine.contract', inter.contract_id.id, 'cancel', cr)
+        return super(intervention, self).action_cancelled(cr, uid, ids)
+    
     _columns = {
-        'contract_id': fields.many2one('openstc.patrimoine.contract', 'Contract'),
+        'contract_id': fields.many2one('openstc.patrimoine.contract', 'Contract', ondelete="cascade"),
         }
 intervention()
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
