@@ -37,4 +37,13 @@ class intervention(OpenbaseCore):
         'contract_id': fields.many2one('openstc.patrimoine.contract', 'Contract', ondelete="cascade"),
         }
 intervention()
+
+class task(OpenbaseCore):
+    _inherit = "project.task"
+    
+    _actions = {
+        'delete': lambda self, cr, uid, record, groups_code: record.state in ('draft','absent') and not record.project_id
+        }
+    
+task()
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
