@@ -45,7 +45,7 @@ class openstc_patrimoine_contract(OpenbaseCore):
     
     """ @note: Override of Wkf method, generate tasks according to recurrence setting"""
     def wkf_wait(self, cr, uid, ids, context=None):
-        self.write(cr, uid, ids, {'state':'wait'},context=context)
+        super(openstc_patrimoine_contract, self).wkf_wait(cr, uid, ids, context=context)
         self.get_all_recurrences(cr, uid, ids, context=context)
         return True
     
