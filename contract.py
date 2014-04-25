@@ -46,14 +46,14 @@ class openstc_patrimoine_contract(OpenbaseCore):
     """ @note: Override of Wkf method, generate tasks according to recurrence setting"""
     def wkf_wait(self, cr, uid, ids, context=None):
         super(openstc_patrimoine_contract, self).wkf_wait(cr, uid, ids, context=context)
-        self.get_all_recurrences(cr, uid, ids, context=context)
+        #self.get_all_recurrences(cr, uid, ids, context=context)
         return True
     
     """ @return: dict containing values used to create intervention"""
     def prepare_intervention(self, cr, uid, contract ,context=None):
         ret = {'name':contract.name,
                'description':contract.description,
-               'service_id':contract.technical_service_id.id if contract.internal_inter and contract.technical_service_id else False,
+               'service_id':contract.technical_service_id.id if contract.technical_service_id else False,
                'has_equipment':contract.patrimoine_is_equipment,
                'equipment_id':contract.equipment_id.id if contract.patrimoine_is_equipment and contract.equipment_id else False,
                'site1':contract.site_id.id if not contract.patrimoine_is_equipment and contract.site_id else False,
@@ -126,7 +126,7 @@ class openstc_task_recurrence(OpenbaseCore):
             ret.extend([line.id for line in contract.contract_line])
         return ret
     
-    store_related = {'openstc.patrimoine.contract':[_get_line_from_contracts,['equipment_id','site_id','patrimoine_is_equipment'],10],
+    store_related = {'openstc.patrimoine.contract':[_get_line_from_contracts,['equipment_id','site_id','patrimoine_is_equipment', 'internal_inter','partner_id', 'technical_service_id'],11],
                     'openstc.task.recurrence':[lambda self,cr,uid,ids,ctx={}:ids,['contract_id'],9]}
 
     
@@ -142,6 +142,7 @@ class openstc_task_recurrence(OpenbaseCore):
                 val = {
                     'internal_inter':contract.internal_inter,
                     'technical_service_id':contract.technical_service_id.id if contract.technical_service_id else False,
+                    'partner_id':contract.supplier_id.id if contract.supplier_id else False,
                     'patrimoine_is_equipment':contract.patrimoine_is_equipment,
                     'site_id':contract.site_id.id if contract.site_id else False,
                     'equipment_id':contract.equipment_id.id if contract.equipment_id else False,
