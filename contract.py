@@ -67,12 +67,16 @@ class openstc_patrimoine_contract(OpenbaseCore):
     def generate_intervention(self, cr, uid, ids, context=None):
         inter_obj = self.pool.get('project.project')
         task_obj = self.pool.get('project.task')
+        recur_obj = self.pool.get('openstc.task.recurrence')
         for contract in self.browse(cr, uid, ids, context=context):
             #create and link intervention according to the contract data
             vals = self.prepare_intervention(cr, uid, contract, context=context)
             ret = self.pool.get('project.project').create(cr, uid, vals, context=context)
             contract.write({'intervention_id':ret})
             #retrieve all tasks of the contract and link them with the newly created intervention
+            recurrence_to_plan_ids = recur_obj.search(cr, uid, [('contract_id.id','=',contract.id),
+                                                         ('plan_task','=',True)], context=context)
+            recur_obj.plan_occurrences(cr, uid, recurrence_to_plan_ids, context=context)
             task_ids = task_obj.search(cr, uid, [('recurrence_id.contract_id.id','=',contract.id)], context=context)
             if task_ids:
                 inter_obj.write(cr, uid, [ret], {'tasks':[(4,task_id) for task_id in task_ids]})
@@ -120,24 +124,15 @@ class openstc_task_recurrence(OpenbaseCore):
                 ret.append(item.contract_line_id.id)
         return ret
     
-    def _get_line_from_contracts(self, cr, uid, ids, context=None):
-        ret = []
-        for contract in self.browse(cr, uid, ids, context=None):
-            ret.extend([line.id for line in contract.contract_line])
-        return ret
-    
-    store_related = {'openstc.patrimoine.contract':[_get_line_from_contracts,['equipment_id','site_id','patrimoine_is_equipment', 'internal_inter','partner_id', 'technical_service_id'],11],
-                    'openstc.task.recurrence':[lambda self,cr,uid,ids,ctx={}:ids,['contract_id'],9]}
-
-    
-
-    
     """ Instead of using related field, i use functionnal field (because patrimoine module will need this behavior too
     @return: values of 'related' values of fields defined in 'name' params"""
     def related_fields_function(self, cr, uid, ids, name, args, context=None):
+        recur_obj = self.pool.get('openstc.task.recurrence')
+        #hardcoded patch for openerp stored function bug, when using (2,ID) on one2many, OpenERP wants to trigger an update for id=ID
+        ids = recur_obj.search(cr, uid, [('id','in',ids)],context=context)
         ret = super(openstc_task_recurrence, self).related_fields_function(cr, uid, ids, name, args, context=None)
-        for recurrence in self.browse(cr, uid, ids, context=context):
-            contract = recurrence.contract_id 
+        for recurrence in recur_obj.browse(cr, uid, ids, context=context):
+            contract = recurrence.contract_id
             if not recurrence.from_inter and contract:
                 val = {
                     'internal_inter':contract.internal_inter,
@@ -147,8 +142,8 @@ class openstc_task_recurrence(OpenbaseCore):
                     'site_id':contract.site_id.id if contract.site_id else False,
                     'equipment_id':contract.equipment_id.id if contract.equipment_id else False,
                     'patrimoine_name':contract.patrimoine_name,
-                    'date_start':contract.date_start_order,
-                    'date_end':contract.date_end_order
+#                    'date_start':contract.date_start_order if not recurrence.date_start else recurrence.date_start,
+#                    'date_end':contract.date_end_order if not recurrence.date_end else recurrence.date_end
                     }
                 ret[recurrence.id].update(val)
         return ret
