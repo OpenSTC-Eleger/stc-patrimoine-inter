@@ -74,8 +74,7 @@ class openstc_patrimoine_contract(OpenbaseCore):
             ret = self.pool.get('project.project').create(cr, uid, vals, context=context)
             contract.write({'intervention_id':ret})
             #retrieve all tasks of the contract and link them with the newly created intervention
-            recurrence_to_plan_ids = recur_obj.search(cr, uid, [('contract_id.id','=',contract.id),
-                                                         ('plan_task','=',True)], context=context)
+            recurrence_to_plan_ids = recur_obj.search(cr, uid, [('contract_id.id','=',contract.id)], context=context)
             recur_obj.plan_occurrences(cr, uid, recurrence_to_plan_ids, context=context)
             task_ids = task_obj.search(cr, uid, [('recurrence_id.contract_id.id','=',contract.id)], context=context)
             tasks_draft_ids = task_obj.search(cr, uid, [('id','in',task_ids),('state','=','draft')], context=context)
