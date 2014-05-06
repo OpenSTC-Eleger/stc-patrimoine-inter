@@ -28,7 +28,7 @@ class openstc_patrimoine_contract(OpenbaseCore):
         } 
     
     _actions = {
-        'create_inter':lambda self,cr,uid,record,groups_code: record.state in ('draft',),
+        'create_inter':lambda self,cr,uid,record,groups_code: record.state in ('wait',),
         }
     
     _columns = {
@@ -78,8 +78,11 @@ class openstc_patrimoine_contract(OpenbaseCore):
                                                          ('plan_task','=',True)], context=context)
             recur_obj.plan_occurrences(cr, uid, recurrence_to_plan_ids, context=context)
             task_ids = task_obj.search(cr, uid, [('recurrence_id.contract_id.id','=',contract.id)], context=context)
+            tasks_draft_ids = task_obj.search(cr, uid, [('id','in',task_ids),('state','=','draft')], context=context)
+            inter_scheduled = len(tasks_draft_ids) == 0
+            
             if task_ids:
-                inter_obj.write(cr, uid, [ret], {'tasks':[(4,task_id) for task_id in task_ids]})
+                inter_obj.write(cr, uid, [ret], {'tasks':[(4,task_id) for task_id in task_ids], 'state':'scheduled' if inter_scheduled else 'open'})
         return True
     
     """ @note: Override of Wkf method, generate intervention and update state"""
@@ -114,7 +117,6 @@ openstc_patrimoine_contract()
 
 class openstc_task_recurrence(OpenbaseCore):
     _inherit = 'openstc.task.recurrence'
-    
      
     def _get_line_from_occur(self, cr, uid, ids, context=None):
         occ = self.pool.get("openstc.patrimoine.contract.occurrence").browse(cr, uid, ids, context=context)
