@@ -42,7 +42,8 @@ class task(OpenbaseCore):
     _inherit = "project.task"
     
     _actions = {
-        'delete': lambda self, cr, uid, record, groups_code: record.state in ('draft','absent') and not record.project_id
+        'delete': lambda self, cr, uid, record, groups_code: record.state in ('draft','absent') and \
+         (record.recurrence_id and (record.recurrence_id.contract_id and (record.recurrence_id.contract_id.state == 'draft') or not record.recurrence_id.contract_id) or not record.recurrence_id)
         }
     
 task()
